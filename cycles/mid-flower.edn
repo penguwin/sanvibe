@@ -1,0 +1,19 @@
+;; Daylight cycle, upload with: sanvibe --set-cycle cycles/mid-flower.edn
+;;
+;; Points are ["HH:MM" percent] on the lamp clock, from 00:00 to 24:00. The
+;; dimmer interpolates linearly between them and caps the result at the max
+;; brightness. :id is optional; the app gives its cycles one, without it
+;; sanvibe derives one from the name.
+{:name "Mid Flower"
+ :id 1015331631
+ :points [["00:00" 20]
+          ["00:30" 20]
+          ["01:30" 50]
+          ["03:30" 75]
+          ["04:00" 55]
+          ["05:00" 80]
+          ["10:00" 80]
+          ["11:30" 20]
+          ["12:00" 20]
+          ["12:01" 0]
+          ["24:00" 0]]}

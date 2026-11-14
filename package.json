@@ -1,0 +1,14 @@
+{
+  "name": "sanvibe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Control a SANlight Bluetooth (mesh) dimmer from the command line",
+  "type": "module",
+  "bin": {
+    "sanvibe": "bin/sanvibe.mjs"
+  },
+  "dependencies": {
+    "@stoprocent/noble": "2.8.0",
+    "nbb": "1.6.214"
+  }
+}

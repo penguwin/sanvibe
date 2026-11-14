@@ -1,0 +1,11 @@
+node_modules/
+
+.portal/
+.lsp/
+.clj-kondo/.cache
+
+
+# contains the mesh network keys -- never commit
+SANlightMesh.json
+*.mesh.json
+.sanlight-state.json
