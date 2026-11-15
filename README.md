@@ -22,12 +22,13 @@ Requires macOS and Node.js 18+.
 ## Usage
 
 ```
-sanvibe            # max brightness and output
-sanvibe -b 80      # set max brightness to 80 %, read it back
-sanvibe -b 0       # off
-sanvibe -i         # max brightness, output, lamp clock, signal, daylight cycle
-sanvibe -c > my-cycle.edn    # save the daylight cycle as EDN
-sanvibe -s my-cycle.edn      # upload a daylight cycle, read it back
+sanvibe                         # max brightness, output, lamp clock, signal, daylight cycle
+sanvibe brightness              # max brightness and output
+sanvibe brightness 80           # set max brightness to 80 %, read it back
+sanvibe brightness 0            # off
+sanvibe cycle > my-cycle.edn    # save the daylight cycle as EDN
+sanvibe cycle my-cycle.edn      # upload a daylight cycle, read it back
+sanvibe help
 ```
 
 - Brightness: 0 (off) or 20–100. It caps the daylight cycle running on the dimmer.
@@ -41,7 +42,8 @@ sanvibe -s my-cycle.edn      # upload a daylight cycle, read it back
 ## Daylight cycles
 
 The dimmer runs one daylight cycle, on its lamp clock: it starts at 00:00 when
-the lamp gets power. `-s` replaces it with the one from an EDN file:
+the lamp gets power. `sanvibe cycle FILE` replaces it with the one from an EDN
+file:
 
 ```clojure
 {:name "Mid Flower"
@@ -60,7 +62,7 @@ the lamp gets power. `-s` replaces it with the one from an EDN file:
   29 bytes. The dimmer refuses some invalid cycles but runs others, so sanvibe
   does some checks.
 - Without `:id`, sanvibe derives one from the name. The app gives its cycles
-  an ID; `-c` keeps it.
+  an ID; `sanvibe cycle` keeps it.
 - sanvibe checks the file before connecting, and reads the cycle back after
   the upload.
 - [cycles/mid-flower.edn](cycles/mid-flower.edn) is an example.
@@ -70,7 +72,7 @@ the lamp gets power. `-s` replaces it with the one from an EDN file:
 | File | |
 |---|---|
 | `bin/sanvibe.mjs` | entry point, loads the ClojureScript with nbb |
-| `src/sanvibe/cli.cljs` | arguments, output |
+| `src/sanvibe/cli.cljs` | commands ([babashka.cli](https://github.com/babashka/cli), built into nbb), output |
 | `src/sanvibe/dimmer.cljs` | SANlight vendor messages |
 | `src/sanvibe/cycle.cljs` | daylight cycle EDN files |
 | `src/sanvibe/proxy.cljs` | GATT proxy connection, sending and receiving |

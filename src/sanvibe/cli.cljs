@@ -1,5 +1,6 @@
 (ns sanvibe.cli
-  (:require [clojure.string :as str]
+  (:require [babashka.cli :as cli]
+            [clojure.string :as str]
             [promesa.core :as p]
             [sanvibe.config :as config]
             [sanvibe.cycle :as daylight]
@@ -8,18 +9,22 @@
             [sanvibe.proxy :as proxy]))
 
 (def ^:private usage
-  "Usage: sanvibe [--brightness PERCENT | --info | --cycle | --set-cycle FILE]
+  "Usage: sanvibe [COMMAND]
 
-Without options, shows the brightness of every SANlight dimmer in the mesh.
---brightness (-b) sets it: 0 turns the light off, otherwise 20..100.
---info (-i) shows everything the dimmers tell, including the daylight cycle.
---cycle (-c) prints the daylight cycle as EDN, to keep or edit it:
-    sanvibe -c > my-cycle.edn
---set-cycle (-s) uploads a daylight cycle from such a file. It replaces the
-    dimmer's one, which is the only one it keeps.
+  info                What the dimmers tell: max brightness, output, lamp
+                      clock, signal, daylight cycle. The default.
+  brightness          The max brightness and the output.
+  brightness PERCENT  Sets the max brightness, which caps the daylight cycle:
+                      0 turns the light off, otherwise 20..100.
+  cycle               Prints the daylight cycle as EDN, to keep or edit it:
+                        sanvibe cycle > my-cycle.edn
+  cycle FILE          Uploads a daylight cycle from such a file. It replaces
+                      the dimmer's one, the only one it keeps.
+  help                This text, also -h or --help.
 
-Needs the mesh export of the SANlight app (Settings > Mesh Maintenance >
-Export Mesh) as SANlightMesh.json in the project directory, or at $SANLIGHT_MESH.
+Every command works on all SANlight dimmers in the mesh. It needs the mesh
+export of the SANlight app (Settings > Mesh Maintenance > Export Mesh) as
+SANlightMesh.json in the project directory, or at $SANLIGHT_MESH.
 The app must be closed: a dimmer only talks to one device at a time.")
 
 (defn- label [{:keys [name address]}]
@@ -89,7 +94,7 @@ The app must be closed: a dimmer only talks to one device at a time.")
 (defn- print-cycle [conn {:keys [name] :as d}]
   (p/let [_ (log/step (str (label d) ": reading its daylight cycle..."))
           cycle (dimmer/daylight-cycle conn d)]
-    (println (daylight/->edn cycle (str "Daylight cycle of " name ". Upload with: sanvibe --set-cycle FILE")))))
+    (println (daylight/->edn cycle (str "Daylight cycle of " name ". Upload with: sanvibe cycle FILE")))))
 
 (defn- upload-cycle [conn {:keys [name] :as d} cycle]
   (p/let [_ (log/step (str (label d) ": uploading the daylight cycle " (:name cycle) "..."))
@@ -120,33 +125,56 @@ The app must be closed: a dimmer only talks to one device at a time.")
   (js/console.error message)
   (js/process.exit 1))
 
-(defn- parse-percent [s]
-  (when (re-matches #"\d{1,3}" s)
-    (let [n (js/parseInt s 10)]
-      (when (or (zero? n) (<= 20 n 100))
-        n))))
+(defn- run
+  "Runs `f` for every dimmer, then exits."
+  [f]
+  (-> (control f)
+      (p/then (fn [_] (js/process.exit 0)))
+      (p/catch (fn [e] (fail (ex-message e))))))
+
+(defn- brightness-command [{:keys [percent]}]
+  (run (if percent #(set-and-verify %1 %2 percent) show)))
+
+(defn- cycle-command [{:keys [file]}]
+  (if file
+    ;; read the file before connecting, which takes a while
+    (let [cycle (daylight/read-file file)]
+      (run #(upload-cycle %1 %2 cycle)))
+    (run print-cycle)))
+
+(defn- command
+  "An entry of the babashka.cli dispatch table. `f` gets the parsed options."
+  [cmds f & {:as more}]
+  (merge {:cmds cmds
+          :fn (fn [{:keys [opts args dispatch]}]
+                (cond
+                  (:help opts) (println usage)
+                  (seq args) (fail (str (if (seq dispatch) "Too many arguments: " "Unknown command: ")
+                                        (str/join " " args) "\n\n" usage))
+                  :else (f opts)))}
+         more))
+
+(def ^:private commands
+  [(command ["info"] (fn [_] (run info)))
+   (command ["brightness"] brightness-command :args->opts [:percent])
+   (command ["cycle"] cycle-command :args->opts [:file])
+   (command ["help"] (fn [_] (println usage)))
+   (command [] (fn [_] (run info)))])
+
+(def ^:private parse-options
+  {:spec {:percent {:coerce :long
+                    :validate #(or (zero? %) (<= 20 % 100))}
+          :help {:alias :h :coerce :boolean}}
+   :restrict [:percent :file :help]
+   :error-fn (fn [{:keys [option msg]}]
+               (fail (if (= :percent option)
+                       "Brightness must be 0 (off) or between 20 and 100."
+                       (str msg "\n\n" usage))))})
 
 (defn -main [& args]
-  (let [[flag value & more] args
-        run #(-> (control %)
-                 (p/then (fn [_] (js/process.exit 0)))
-                 (p/catch (fn [e] (fail (ex-message e)))))]
-    (cond
-      (empty? args) (run show)
-      (#{"-h" "--help"} flag) (println usage)
-      (and (#{"-i" "--info"} flag) (nil? value)) (run info)
-      (and (#{"-c" "--cycle"} flag) (nil? value)) (run print-cycle)
-      (and (#{"-s" "--set-cycle"} flag) value (empty? more))
-      ;; check the file before connecting, which takes a while
-      (try
-        (let [cycle (daylight/read-file value)]
-          (run #(upload-cycle %1 %2 cycle)))
-        (catch :default e (fail (ex-message e))))
-      (and (#{"-b" "--brightness"} flag) value (empty? more))
-      (if-let [percent (parse-percent value)]
-        (run #(set-and-verify %1 %2 percent))
-        (fail "Brightness must be 0 (off) or between 20 and 100."))
-      :else (fail usage))))
+  (try
+    (cli/dispatch commands args parse-options)
+    (catch :default e (fail (ex-message e)))))
 
 ;; what loading this file returns to bin/sanvibe.mjs
 #js {:main -main}
