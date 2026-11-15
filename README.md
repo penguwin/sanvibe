@@ -21,7 +21,7 @@ Requires macOS and Node.js 18+.
 
 ## Usage
 
-```
+```text
 sanvibe                         # max brightness, output, lamp clock, signal, daylight cycle
 sanvibe brightness              # max brightness and output
 sanvibe brightness 80           # set max brightness to 80 %, read it back
@@ -70,7 +70,7 @@ file:
 ## Code
 
 | File | |
-|---|---|
+| --- | --- |
 | `bin/sanvibe.mjs` | entry point, loads the ClojureScript with nbb |
 | `src/sanvibe/cli.cljs` | commands ([babashka.cli](https://github.com/babashka/cli), built into nbb), output |
 | `src/sanvibe/dimmer.cljs` | SANlight vendor messages |
@@ -79,5 +79,10 @@ file:
 | `src/sanvibe/config.cljs` | mesh export, persisted state |
 | `src/sanvibe/mesh.cljs` | Bluetooth Mesh crypto, network and transport layer, proxy PDUs |
 | `src/sanvibe/log.cljs` | progress output |
+| `test/sanvibe/` | tests: mesh crypto against the spec's sample data, cycle files |
+
+`npm test` runs the tests, `npm run lint` lints with
+[clj-kondo](https://github.com/clj-kondo/clj-kondo). CI runs both on every push
+and pull request, and checks that the CLI starts on macOS.
 
 Protocol: [docs/PROTOCOL.md](docs/PROTOCOL.md)

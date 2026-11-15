@@ -7,6 +7,10 @@
   "bin": {
     "sanvibe": "bin/sanvibe.mjs"
   },
+  "scripts": {
+    "lint": "clj-kondo --lint src test",
+    "test": "nbb --classpath src:test -m sanvibe.test-runner"
+  },
   "dependencies": {
     "@stoprocent/noble": "2.8.0",
     "nbb": "1.6.214"
