@@ -4,20 +4,23 @@
 
 > 100% vibecoded
 
-CLI for SANlight Bluetooth dimmers on macOS, without the SANlight app. Joins the
+CLI for SANlight Bluetooth dimmers, without the SANlight app. Joins the
 dimmers' Bluetooth mesh via GATT proxy, with the keys from the app's mesh
 export. ClojureScript on [nbb](https://github.com/babashka/nbb), Bluetooth via
 [noble](https://github.com/stoprocent/noble).
 
 ## Setup
 
-Requires macOS and Node.js 18+.
+Requires Node.js 18+ and Bluetooth LE. Runs on macOS and Linux (tested on a
+Raspberry Pi).
 
 1. SANlight app: Settings > Mesh Maintenance > Export Mesh. Save it as
    `SANlightMesh.json` in the project directory, or set `SANLIGHT_MESH` to its
    path. It contains the network keys: don't commit it.
 2. `npm install && npm link`
-3. Allow Bluetooth access for the terminal (macOS asks on the first run).
+3. Bluetooth access. macOS: allow it for the terminal (macOS asks on the first
+   run). Linux: see noble's
+   [Linux prerequisites](https://github.com/stoprocent/noble#linux).
 
 ## Usage
 
