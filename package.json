@@ -13,6 +13,6 @@
   },
   "dependencies": {
     "@stoprocent/noble": "2.8.0",
-    "nbb": "1.6.214"
+    "nbb": "1.6.215"
   }
 }
